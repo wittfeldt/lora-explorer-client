@@ -8,7 +8,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.min.js"></script>
   <style>
   html {
-    background-color: #001f3f;
+    background-image: url("images/bg.png");
     color: #eee;
     font-family: -apple-system, 'HelveticaNeue';
   }
@@ -223,7 +223,7 @@
     var self = this;
     
     this.subscribe = function(devEui, cb) {
-      ws = new WebSocket("ws://" + location.host + "/ws/ttnexplorer");
+      ws = new WebSocket("ws://" + location.host + "/ws/ttn-explorer");
       ws.onmessage = onMessage.bind(self, cb)
       ws.onopen = function() {
         send({
@@ -438,7 +438,7 @@
   
   $(function() {
     FastClick.attach(document.body);
-    getLocation(function() {});
+    // getLocation(function() {});
     navigate("#settings");
   })
 
