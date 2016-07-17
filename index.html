@@ -1,102 +1,46 @@
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1 maximum-scale=1 user-scalable=0">
+  <meta name="viewport" content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/zepto/1.1.6/zepto.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.min.js"></script>
-  <style>
-  html {
-    background-image: url("images/bg.png");
-    color: #eee;
-    font-family: -apple-system, 'HelveticaNeue';
-  }
-  label  {
-    color: #FF851B;
-    font-weight: bold;
-    display: block;
-    margin-bottom: 4px;
-  }
-  input[type=text] {
-    width: 300px;
-    margin-bottom: 9px;
-  }
-  p.hint {
-    margin-top: -5px;
-    font-size: small;
-  }
-
-  .page        { display: none;  }
-  .page.active { display: block; }
-  .error       { font-style: italic; }
-  .log         { width: 100%;    }
-  .flash       { background-color: #FF851B !important; color: #001f3f !important;}
-  th           { color: #FF851B;}
-  th, td       { text-align: left; }
-  
-  @media (max-width:767px) {
-    input {
-      -webkit-appearance: none;
-      height: 40px;
-      width: 100%;
-      font-size: 18px;
-      margin-bottom: 7px;
-    }
-    h2 { 
-      text-align: center;
-    }
-    input[type=text],input[type=submit] {
-      background-color: #eee;
-      width: 100%;
-    }
-    input[type=submit], input[type=button] {
-      margin-top:30px;
-      height: 65px;
-      font-weight: bold;
-    }
-    input[type=submit]:active {
-      background-color: #99ccff;
-    }
-  }
-  </style>
+  <script src="js/vendor/zepto.min.js"></script>
+  <script src="js/vendor/mqttws31.min.js"></script>
+  <script src="js/vendor/fastclick.min.js"></script>
+  <script src="js/backend.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/packettimer.js"></script>
+  <script src="js/runlog.js"></script>
+  <script src="js/util.js"></script>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <h2>TTN explorer</h2>
+  <header>TTN EXPLORER</header>
   
   <!-- Page #settings -->
   <div class="page" id="settings">
-    <form id="settingsForm">
+    <form>
       <label for="devEui">Dev EUI </label>
       <input type="text" name="devEui"></input>
-      <p class="hint">
-        Leave empty to listen for packets from all your devices
-      </p>
+
       <label for="appEui">App EUI </label>
       <input type="text" name="appEui"></input>
+
       <label for="accessKeys">Access Keys </label>
       <input type="text" name="accessKeys"></input>
-      <label for="label">Label </label>
-      <input type="text" name="label"></input>
-      <p class="hint">
-        The measurements will be tagged with this label. Leave it empty
-        for simulation mode (no data will be stored)
+      
+      <label for="shareResults">Share results</label>
+      <select name="shareResults">
+        <option value="1">Yes</option>
+        <option value="0">No</option>
+      </select>
+      <p>
+        Choose if you want to share your measurements with the community (Please do!)
       </p>
       <p>
-        <input type="submit" id="startBtn" value="Start session"></input>
+        <button id="startBtn">START SESSION</button>
       </p>
     </form>
   </div>
-
-  <!-- Page #checkGps -->
-  <div id="checkGps" class="page">
-    <p>Waiting for GPS accuracy <= 10m...</p>
-    <pre class="info"></pre>
-    <p>
-      <input type="submit" class="stop" value="Stop session"></input>
-    </p>
-  </div>
-
+  
   <!-- Page #run -->
   <div id="run" class="page">
     <p class="info"></p>
@@ -115,9 +59,8 @@
       <tbody>
       </tbody>
     </table>
-    </pre>
     <p>
-      <input type="submit" id="stop" value="Stop session"></input>
+      <button id="stopBtn">STOP SESSION</button>
     </p>
   </div>
   <!-- #run end -->
@@ -125,52 +68,26 @@
   <script>
   "use strict";
   
-  var accuracyTreshold = 10;
+  var accuracyTreshold = 100000;
   
   /*********************************************************************
    * Page: #settings
    ********************************************************************/
   
   $("#settings").on("willshow", function(ev) {
-    window.settings = new FormStore("settings", $("#settings form"));
+    window.settings = new Settings("#settings form");
     settings.load();
   })
-  .find("form").on("submit", function(ev) {
+  .find("#startBtn").on("click", function(ev) {
     ev.preventDefault();
-    if (settings.get("appEui") && settings.get("accessKeys")) {
+    var err = settings.validate();
+    if (!err) {
       settings.save();
-      navigate("#checkGps");
+      navigate("#run");
     } else {
-      alert("App EUI and Access keys are required")
+      alert(err)
     }
   });
-  
-  /*********************************************************************
-   * Page: #checkGps
-   ********************************************************************/
-  
-  $("#checkGps").on("willshow", function(ev) {
-    var $page = $(this);
-    var count = 0;
-    function check() {
-      count+=1;
-      getLocation(function(pos) {
-        pos.count = count;
-        $page.find(".info").html(JSON.stringify(pos, null, 2));
-        if (pos.accuracy <= accuracyTreshold)
-          navigate("#run");
-      })
-    }  
-    var ci = setInterval(check, 5000);
-    setTimeout(check, 500);
-    
-    $page.one("willhide", function(ev) {
-      clearInterval(ci);
-    })
-  })
-  .find(".stop").on("click", function(ev) {
-    navigate("#settings");
-  })
   
   /*********************************************************************
    * Page: #run
@@ -178,19 +95,20 @@
   
   $("#run").on("willshow", function(ev) {
     var $page = $(this);
-    var sget = settings.get;
     var packetTimer = new PacketTimer($("#run .info"));
-    var backend = new Backend(sget("appEui"), sget("accessKeys"));
+    var backend = new Backend(settings.get("appEui"), settings.get("accessKeys"));
     var runLog = new RunLog($page.find(".log tbody"));
   
-    backend.subscribe(sget("devEui"), function(msg) {
-      if (msg.loraData) {
+    backend.subscribe(settings.get("devEui"), function(msg) {
+      if (msg.packet) {
         getLocation(function(pos) {
+          var packet = annotatePacket(msg.packet, pos, settings);
           packetTimer.restart();
-          flashPage();
-          var ms = new Measurement(msg.loraData, pos, sget("label"));
-          runLog.append(ms)
-          if (ms.isValid()) backend.report(ms);
+          flashPage(pos.accuracy <= accuracyTreshold);
+          runLog.append(packet);
+          
+          if (settings.shareResults)
+            backend.report(packet);
         });
         
       } else if (msg.error) {
@@ -202,7 +120,7 @@
       } else {
         alert(JSON.stringify(msg));
       }
-    })
+    });
     
     $page.one("willhide", function(ev) {
       runLog.clear();
@@ -210,232 +128,13 @@
       backend.close();
     })
   })
-  .find("#stop").on("click", function(ev) {
+  .find("#stopBtn").on("click", function(ev) {
     navigate("#settings");
   })
   
   /*********************************************************************
-   * Class: Backend
-   ********************************************************************/
-  
-  function Backend(appEui, accessKeys) {
-    var ws = null;
-    var self = this;
-    
-    this.subscribe = function(devEui, cb) {
-      ws = new WebSocket("ws://" + location.host + "/ws/ttn-explorer");
-      ws.onmessage = onMessage.bind(self, cb)
-      ws.onopen = function() {
-        send({
-          action: "subscribe",
-          appEui: appEui,
-          accessKeys: accessKeys,
-          devEui: devEui
-        })
-      }
-      browserEvents(true);
-    }
-    
-    this.report = function(msr) {
-      msr.action = "report";
-      send(msr);
-    }
-    
-    this.close = function() {
-      console.log("Backend.close()");
-      if (ws) {
-        browserEvents(false)
-        send({ action: "unsubscribe" })
-        ws.close();
-      }
-    }
-    /*********************************************************************
-     * Unsubscribe when user navigates from or closes the browser 
-     * mid-session. To do: include event triggeded by iOS full screen apps
-     ********************************************************************/
-    
-    function browserEvents(activate) {
-      [ "unload", "pagehide", ].forEach(function(eventType) {
-        var func = activate ? "addEventListener" : "removeEventListener";
-        window[func].call(null, eventType, self.close.bind(self))
-      })
-    }
-    
-    function onMessage(cb, ev) {
-      var data = JSON.parse(ev.data);
-      cb.call(null, data)
-    }
-    
-    function send(msg) {
-      console.log("Backend.send", msg)
-      ws.send(typeof msg === 'string' ? msg : JSON.stringify(msg));
-    }
-  }
-  
-  /*********************************************************************
-   * Class: Measurement
-   ********************************************************************/
-  
-  function Measurement(loraData, pos, label) {
-    var topGw = loraData.metadata.sort(function(a,b) { a.rssi < b.rssi })[0];
-    var self = this;
-    
-    this.label = label;
-    this.timestamp  = new Date(topGw.server_time);
-    this.latitude = pos.latitude;
-    this.longitude = pos.longitude;
-    this.accuracy = pos.accuracy;
-    this.metadata = loraData.metadata;
-    [ "rssi", "lsnr", "frequency", "datarate" ].forEach(function(k) {
-      self[k] = topGw[k];
-    })
-
-    this.isValid = function() {
-      return (this.label &&
-        // this.datarate.match(/^SF12|/) &&
-        this.accuracy <= accuracyTreshold);
-    }
-  }
-  
-  /*********************************************************************
-   * Class: RunLog
-   ********************************************************************/
-  function RunLog(el) {
-    var $el = $(el);
-    
-    this.append = function(msr) {
-      console.log("Measurement", msr)
-      var $tr = $("<tr>" + 
-          "<td>" + formatTime(msr.timestamp)   + "</td>" +
-          "<td>" + msr.metadata.length         + "</td>" +
-          "<td>" + msr.accuracy                + "</td>" + 
-          "<td>" + msr.lsnr                    + "</td>" +
-          "<td>" + msr.frequency               + "</td>" + 
-          "<td>" + msr.datarate.split("BW")[0] + "</td>" +
-          "<td>" + msr.rssi                    + "</td>" +
-          "</tr>");
-
-      if (!msr.isValid()) $tr.addClass("error");
-      $el.append($tr);
-    }
-    
-    this.clear = function() {
-      $el.empty();
-    }
-    
-    function formatTime(date) {
-      return date.toISOString().split("T")[1].replace(/\..*$/, "");
-    }
-  }
-
-  /*********************************************************************
-   * Function: Navigate
-   ********************************************************************/
-  
-  function navigate(el) {
-    var $from = $("body div.active");
-    var $to = $(el);
-    $from.trigger("willhide").removeClass("active").trigger("didhide");
-    $to.trigger("willshow").addClass("active").trigger("didshow");
-  }
-  
-  /*********************************************************************
-   * Function: getLocation
-   ********************************************************************/
-  
-  function getLocation(done) {
-    if (typeof navigator.geolocation === "undefined") {
-      alert("Geolocation not supported");
-      return;
-    }
-
-    var options = {
-      enableHighAccuracy: true,
-      timeout: 5000,
-      maximumAge: 0
-    };
-    navigator.geolocation.getCurrentPosition(
-      function(pos) {
-        var c = pos.coords
-        done({
-          latitude: c.latitude,
-          longitude: c.longitude,
-          accuracy: Math.round(c.accuracy)
-        })
-      },
-      function(err) { alert(err) },
-      options);
-  }
-  
-  function flashPage() {
-    $("body").addClass("flash");
-    setTimeout(function() {
-      $("body").removeClass("flash");
-    },50)
-  }
-
-  /*********************************************************************
-   * Class: FormStore
-   ********************************************************************/
-  
-  function FormStore(key, el) {
-    el = $(el);
-    var self = this;
-    this.load = function() {
-      var data = JSON.parse(localStorage.getItem(key) || "{}");
-      Object.keys(data).forEach(function(k) {
-        el.find("input[name=" + k + "]").val(data[k]);
-      })
-    }
-    this.read = function() {
-      var data = el.serializeArray().reduce(function(memo, kv) {
-        memo[kv.name] = (kv.value.length > 0) ? kv.value : null;
-        return memo;
-      }, {});
-      return data;
-    }
-    this.get = function(k) {
-      return self.read()[k];
-    }
-    this.save = function() {
-      localStorage.setItem(key, JSON.stringify(this.read()));
-    }
-  }
-  
-  /*********************************************************************
-   * Class: PacketTimer
-   ********************************************************************/
-  
-  function PacketTimer(el) {
-    var counter = 0;
-    var thread = null;
-    $(el).html("Waiting for packet...");
-    
-    function updateDom(i) {
-      var html = "Last packet was received " + i + " seconds ago";
-      $(el).html(html);
-    }
-    this.start = function() {
-      thread = setInterval(function() {
-        counter+=1;
-        updateDom(counter);
-      }, 1000);
-    }
-    this.stop = function() {
-      counter = 0;
-      updateDom(counter);
-      if (thread) clearInterval(thread);
-    }
-    this.restart = function() {
-      this.stop();
-      this.start();
-    }
-  }
-  
-  /*********************************************************************
    * Start app
    ********************************************************************/
-  
   $(function() {
     FastClick.attach(document.body);
     // getLocation(function() {});

@@ -1,0 +1,68 @@
+* {
+  padding: 0px;
+  margin: 0px;
+}
+html {
+  background-image: url("../images/bg.png");
+  color: #eee;
+  font-family: -apple-system, 'HelveticaNeue';
+}
+header {
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 45px;
+  text-align: center;
+  margin-bottom: -4px;
+}
+p { 
+  font-size: 14px;
+}
+.page {
+  display: none;
+  margin: 0px 12px 0px 12px;
+}
+label  {
+  color: #FF851B;
+  font-weight: bold;
+  display: block;
+  margin: 3px 0px 3px 0px;
+}
+input, button, select {
+  -webkit-appearance: none;
+  border-radius: 0px;
+  width: 100%;
+  background-color: #eee;
+  width: 100%;
+}
+input,select {
+  height: 45px;
+  margin-bottom: 9px;
+  font-size: 16px;
+  padding: 5px;
+}
+button {
+  line-height: 55px;
+  margin-top: 30px;
+  font-weight: bold;
+  font-size: 18px;
+}
+button:active {
+  background-color: #FF851B;
+}
+p.hint {
+  margin-top: -9px;
+}
+.flash       { 
+  background-color: #2ECC40 !important; 
+  color: #001f3f !important;
+}
+.err {
+  background-color: #FF4136 !important;
+}
+
+.page.active  { display: block; }
+.discardHint { display: none; }
+.error { font-style: italic; }
+.log   { width: 100%; margin: 5px 0px 5px 0px;    }
+th     { color: #FF851B;}
+th, td { text-align: left; }
