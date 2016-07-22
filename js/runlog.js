@@ -4,15 +4,15 @@
 function RunLog(el) {
   var $el = $(el);
   
-  this.append = function(msr) {
+  this.append = function(p) {
     var $tr = $("<tr>" + 
-        "<td>" + formatTime(msr.timestamp)   + "</td>" +
-        "<td>" + msr.metadata.length         + "</td>" +
-        "<td>" + msr.accuracy                + "</td>" + 
-        "<td>" + msr.lsnr                    + "</td>" +
-        "<td>" + msr.frequency               + "</td>" + 
-        "<td>" + msr.datarate.split("BW")[0] + "</td>" +
-        "<td>" + msr.rssi                    + "</td>" +
+        "<td>" + formatTime(p.time)        + "</td>" +
+        "<td>" + p.num_gws                 + "</td>" +
+        "<td>" + p.mapper.accuracy         + "</td>" + 
+        "<td>" + p.top_gw.lsnr             + "</td>" +
+        "<td>" + p.frequency               + "</td>" + 
+        "<td>" + p.datarate.split("BW")[0] + "</td>" +
+        "<td>" + p.top_gw.rssi             + "</td>" +
         "</tr>");
     $el.append($tr);
   }
@@ -22,6 +22,7 @@ function RunLog(el) {
   }
   
   function formatTime(date) {
-    return date.toISOString().split("T")[1].replace(/\..*$/, "");
+    return new Date(date).toISOString()
+      .split("T")[1].replace(/\..*$/, "");
   }
 }

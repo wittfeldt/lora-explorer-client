@@ -2,34 +2,38 @@
  * Class: Backend
  ********************************************************************/
 
-function Backend(appEui, accessKeys) {
+function Backend() {
   var ws = null;
   var self = this;
   
-  this.subscribe = function(devEui, cb) {
-    ws = new WebSocket("ws://" + location.host + "/api/ttn-explorer");
+  this.subscribe = function(credentials, cb) {
+    ws = new WebSocket("ws://" + location.host + "/api/client");
     ws.onmessage = onMessage.bind(self, cb)
     ws.onopen = function() {
+      console.log("WS open")
       send({
         action: "subscribe",
-        appEui: appEui,
-        accessKeys: accessKeys,
-        devEui: devEui
+        payload: credentials
       })
     }
     browserEvents(true);
   }
   
-  this.report = function(msr) {
-    msr.action = "report";
-    send(msr);
+  this.report = function(packet) {
+    send({
+      action: "report",
+      payload: packet
+    })
   }
   
   this.close = function() {
     console.log("Backend.close()");
     if (ws) {
       browserEvents(false)
-      send({ action: "unsubscribe" })
+      send({
+        action: "unsubscribe",
+        payload: {}
+      })
       ws.close();
     }
   }
@@ -45,13 +49,13 @@ function Backend(appEui, accessKeys) {
     })
   }
   
-  function onMessage(cb, ev) {
-    var data = JSON.parse(ev.data);
+  function onMessage(cb, msg) {
+    var data = JSON.parse(msg.data);
     cb.call(null, data)
   }
   
   function send(msg) {
-    console.log("Backend.send", msg)
-    ws.send(typeof msg === 'string' ? msg : JSON.stringify(msg));
+    ws.send(typeof msg === 'string' ? 
+      msg : JSON.stringify(msg));
   }
 }

@@ -55,32 +55,11 @@ function flashPage(ok) {
  ********************************************************************/
 
 function annotatePacket(packet, pos, settings) {
+  var mapper = {
+    location: pos.latitude + "," + pos.longitude,
+    altitude: pos.altitude,
+    accuracy: pos.accuracy
+  }
+  packet.mapper = mapper;
   return packet;
 }
-
-/*
-
-this.provider = "ttn-explorer-client";
-
-// Use LoRa stats of the gateway with the strongest signal
-var topGw = loraData.metadata.sort(function(a,b) { a.rssi < b.rssi })[0];
-this.timestamp = new Date(topGw.server_time);
-
-[ "rssi", "lsnr", "frequency", "datarate" ].forEach(function(k) {
-  this[k] = topGw[k];
-}.bind(this));
-
-this.location = pos.latitude + "," + pos.longitude;
-this.accuracy = pos.accuracy;
-this.dev_eui = settings.devEui;
-this.app_eui = settings.appEui;
-
-// Can perhaps be useful in the future
-this.metadata = loraData.metadata;
-
-this.validForReport = function() {
-  return settings.shareResults == "1" && 
-    (this.accuracy <= accuracyTreshold);
-}
-
-*/

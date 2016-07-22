@@ -13,27 +13,59 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header>TTN EXPLORER</header>
   
-  <!-- Page #settings -->
-  <div class="page" id="settings">
+  <!-- Page #operator -->
+  <div class="page" id="operator">
+    <header>Select operator</header>
+    <ul>
+      <li><button class="ttn"></button></li>
+      <li><button class="loriot"></button></li>
+    </ul>
+  </div>
+  
+  <!-- Page #ttnSettings -->
+  <div class="page" id="ttnSettings">
+    <header>TTN Settings</header>
     <form>
-      <label for="devEui">Dev EUI </label>
-      <input type="text" name="devEui"></input>
-
+      <input type="hidden" name="operator" value="ttn">
       <label for="appEui">App EUI </label>
       <input type="text" name="appEui"></input>
-
       <label for="accessKeys">Access Keys </label>
       <input type="text" name="accessKeys"></input>
-      
+      <label for="devEui">Dev EUI </label>
+      <input type="text" name="devEui"></input>
       <label for="shareResults">Share results</label>
       <select name="shareResults">
         <option value="1">Yes</option>
         <option value="0">No</option>
       </select>
       <p>
-        Choose if you want to share your measurements with the community (Please do!)
+        Choose if you want to share your measurements with the
+        community (Please do!)
+      </p>
+      <p>
+        <button id="startBtn">START SESSION</button>
+      </p>
+    </form>
+  </div>
+  
+  <!-- Page #loriotSettings -->
+  <div class="page" id="loriotSettings">
+    <header>LORIOT Settings</header>
+    <form>
+      <input type="hidden" name="operator" value="loriot">
+      <label for="topic">Topic </label>
+      <input type="text" name="topic"></input>
+      <label for="devEui">Dev EUI </label>
+      <input type="text" name="devEui"></input>
+      <label for="shareResults">Share results</label>
+      <select name="shareResults">
+        <option value="1">Yes</option>
+        <option value="0">No</option>
+      </select>
+      <p>
+        Choose if you want to share your measurements with the 
+        community (Please do!)
       </p>
       <p>
         <button id="startBtn">START SESSION</button>
@@ -43,6 +75,7 @@
   
   <!-- Page #run -->
   <div id="run" class="page">
+    <header>LoRa Mapper</header>
     <p class="info"></p>
     <table class="log">
       <thead>
@@ -71,11 +104,24 @@
   var accuracyTreshold = 100000;
   
   /*********************************************************************
+   * Page: #operator
+   ********************************************************************/
+  
+  $("#operator").on("willshow", function(ev) {
+    $(this).find("li").on("click", function() {
+      var op = $(this).find("button").attr("class");
+      navigate("#" + op + "Settings");
+    })
+  });
+  
+  /*********************************************************************
    * Page: #settings
    ********************************************************************/
   
-  $("#settings").on("willshow", function(ev) {
-    window.settings = new Settings("#settings form");
+  $("#ttnSettings, #loriotSettings").on("willshow", function(ev) {
+    var $form = $(this).find("form");
+    var key = ($form.find("[name=operator]"))[0].value + "Settings"
+    window.settings = new Settings($form, key);
     settings.load();
   })
   .find("#startBtn").on("click", function(ev) {
@@ -96,29 +142,24 @@
   $("#run").on("willshow", function(ev) {
     var $page = $(this);
     var packetTimer = new PacketTimer($("#run .info"));
-    var backend = new Backend(settings.get("appEui"), settings.get("accessKeys"));
+    var backend = new Backend();
     var runLog = new RunLog($page.find(".log tbody"));
   
-    backend.subscribe(settings.get("devEui"), function(msg) {
-      if (msg.packet) {
+    backend.subscribe(settings.read(), function(msg) {
+      console.log("backend msg", JSON.stringify(msg, null, 2));
+      if (msg.type == "packet") {
         getLocation(function(pos) {
-          var packet = annotatePacket(msg.packet, pos, settings);
+          var packet = annotatePacket(msg.payload, pos, settings);
           packetTimer.restart();
           flashPage(pos.accuracy <= accuracyTreshold);
           runLog.append(packet);
-          
-          if (settings.shareResults)
+          if (settings.get("shareResults"))
             backend.report(packet);
         });
         
-      } else if (msg.error) {
-        var msg = msg.error.match(/authorized/) ? 
-          "Invalid App EUI or Access keys" : msg.error;
-        alert(msg);
-        navigate("#settings")
-        
       } else {
-        alert(JSON.stringify(msg));
+        alert(msg.payload);
+        navigate("#" + settings.get("operator") + "Settings");
       }
     });
     
@@ -129,7 +170,7 @@
     })
   })
   .find("#stopBtn").on("click", function(ev) {
-    navigate("#settings");
+    navigate("#" + settings.get("operator") + "Settings");
   })
   
   /*********************************************************************
@@ -138,7 +179,7 @@
   $(function() {
     FastClick.attach(document.body);
     // getLocation(function() {});
-    navigate("#settings");
+    navigate("#operator");
   })
 
   </script>
