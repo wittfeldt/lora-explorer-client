@@ -1,61 +1,71 @@
 /*********************************************************************
- * Class: Backend
- ********************************************************************/
+* Class: Backend
+********************************************************************/
 
-function Backend() {
-  var ws = null;
-  var self = this;
+function Backend(credentials) {
+  var ws = new WebSocket("ws://" + location.host + "/api/client"),
+  closedByUser = false,
+  self = this;
   
-  this.subscribe = function(credentials, cb) {
-    ws = new WebSocket("ws://" + location.host + "/api/client");
-    ws.onmessage = onMessage.bind(self, cb)
-    ws.onopen = function() {
-      console.log("WS open")
-      send({
-        action: "subscribe",
-        payload: credentials
-      })
-    }
-    browserEvents(true);
-  }
+  window.ws = ws;
+      
+  ws.onmessage = onMessage;
+  ws.onopen = onOpen;
+  ws.onclose = onClose;
   
   this.report = function(packet) {
     send({
-      action: "report",
-      payload: packet
+      type: "report",
+      data: packet
     })
-  }
+  };
   
   this.close = function() {
-    console.log("Backend.close()");
-    if (ws) {
-      browserEvents(false)
-      send({
-        action: "unsubscribe",
-        payload: {}
-      })
-      ws.close();
-    }
-  }
-  /*********************************************************************
-   * Unsubscribe when user navigates from or closes the browser during
-   * a session To do: Fix iOS full screen support
-   ********************************************************************/
+    send({
+      type: "unsubscribe"
+    })
+    ws.onclose = null;
+    ws.close();
+  };
   
-  function browserEvents(activate) {
-    [ "unload", "pagehide", "fullscreenchange" ].forEach(function(eventType) {
-      var func = activate ? "addEventListener" : "removeEventListener";
-      window[func].call(null, eventType, self.close.bind(self))
+  // Unsubscribe if user navigates away from page or closes window
+  [ "unload", "pagehide", "fullscreenchange" ].forEach(function(eventType) {
+    window.addEventListener(eventType, self.close.bind(self))
+  });
+  
+  function onOpen() {
+    console.log("ws onopen");
+    send({
+      type: "subscribe",
+      data: credentials
     })
   }
   
-  function onMessage(cb, msg) {
-    var data = JSON.parse(msg.data);
-    cb.call(null, data)
+  function onMessage(msg) {
+    msg = JSON.parse(msg.data);
+    console.log("ws onmessage", msg.type);
+    
+    if (msg.type == "packet") {
+      self.trigger("packet", msg.data);
+      
+    } else if (msg.type == "error" || msg.type == "feedback") {
+      self.trigger(msg.type, msg.data.message);
+      
+    } else {
+      console.error("Weird message from websocket", msg);
+    }
+  }
+  
+  function onClose() {
+    self.trigger("error",
+      "Lost connection to server, please restart your session")
   }
   
   function send(msg) {
-    ws.send(typeof msg === 'string' ? 
-      msg : JSON.stringify(msg));
+    if (ws.readyState !== ws.OPEN) return;
+    console.log("ws send", msg.type);
+    ws.send(JSON.stringify(msg))
   }
 }
+
+MicroEvent.mixin(Backend);

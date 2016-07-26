@@ -3,8 +3,10 @@
   <meta name="viewport" content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <script src="js/vendor/zepto.min.js"></script>
+  <script src="//cdn.auth0.com/js/lock/10.0/lock.min.js"></script>
   <script src="js/vendor/mqttws31.min.js"></script>
   <script src="js/vendor/fastclick.min.js"></script>
+  <script src="js/vendor/microevent.js"></script>
   <script src="js/backend.js"></script>
   <script src="js/settings.js"></script>
   <script src="js/packettimer.js"></script>
@@ -13,6 +15,9 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  
+  <button id="back" class="headerBtn">&lt;</button>
+  <button id="logout" class="headerBtn">x</button>
   
   <!-- Page #operator -->
   <div class="page" id="operator">
@@ -82,7 +87,7 @@
         <tr>
           <th>Time</th>
           <th>GWs</th>
-          <th>Acc</th>
+          <th>Dist</th>
           <th>SNR</th>
           <th>Freq</th>
           <th>DR</th>
@@ -101,18 +106,54 @@
   <script>
   "use strict";
   
-  var accuracyTreshold = 100000;
+  var accuracyTreshold = 10;
+  
+  // Initiating our Auth0Lock
+  var lock = new Auth0Lock(
+    'RguoYpumURo8HPkQon3VyshZBTMHnfBx',
+    'wittfeldt.auth0.com',
+    {
+      closable: false,
+      primaryColor: "#ffc600",
+      languageDictionary: {
+        title: "Log in"
+      },
+    }
+  );
+
+  lock.on("authenticated", function(authResult) {
+    console.log("auth event");
+    lock.getProfile(authResult.idToken, function(error, profile) {
+      if (error) {
+        console.error("getProfile", error);
+        return;
+      }
+      localStorage.setItem('token', authResult.idToken);
+      localStorage.setItem('profile', JSON.stringify(profile));
+      $("#logout").show();
+      navigate("#operator");
+    });
+  });
+  
+  $("#logout").on("click", function(ev) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("profile");
+    location.reload();
+  });
+  
+  $("#back").on("click", function(ev) {
+    ev.preventDefault();
+    goBack();
+  })
   
   /*********************************************************************
    * Page: #operator
    ********************************************************************/
   
-  $("#operator").on("willshow", function(ev) {
-    $(this).find("li").on("click", function() {
-      var op = $(this).find("button").attr("class");
-      navigate("#" + op + "Settings");
-    })
-  });
+  $("#operator").find("li").on("click", function() {
+    var op = $(this).find("button").attr("class");
+    navigate("#" + op + "Settings");
+  })
   
   /*********************************************************************
    * Page: #settings
@@ -142,27 +183,33 @@
   $("#run").on("willshow", function(ev) {
     var $page = $(this);
     var packetTimer = new PacketTimer($("#run .info"));
-    var backend = new Backend();
+    var backend = new Backend(settings.read());
     var runLog = new RunLog($page.find(".log tbody"));
-  
-    backend.subscribe(settings.read(), function(msg) {
-      console.log("backend msg", JSON.stringify(msg, null, 2));
-      if (msg.type == "packet") {
-        getLocation(function(pos) {
-          var packet = annotatePacket(msg.payload, pos, settings);
-          packetTimer.restart();
-          flashPage(pos.accuracy <= accuracyTreshold);
-          runLog.append(packet);
-          if (settings.get("shareResults"))
-            backend.report(packet);
-        });
-        
-      } else {
-        alert(msg.payload);
-        navigate("#" + settings.get("operator") + "Settings");
-      }
-    });
     
+    backend.bind("packet", function(packet) {
+      getLocation(function(pos) {
+        annotatePacket(packet, pos);
+        if (settings.get("shareResults") == "1") {
+          packetTimer.setFeedback("Sharing result...");
+          backend.report(packet);
+        } else {
+          packetTimer.setFeedback("Results are not shared");
+        }
+        flashPage(pos.accuracy <= accuracyTreshold);
+        runLog.append(packet);
+        packetTimer.restart();
+      });
+    })
+    
+    backend.bind("error", function(msg) {
+      alert(msg);
+      navigate("#" + settings.get("operator") + "Settings");
+    })
+    
+    backend.bind("feedback", function(msg) {
+      packetTimer.setFeedback(msg);
+    })
+
     $page.one("willhide", function(ev) {
       runLog.clear();
       packetTimer.stop();
@@ -176,10 +223,20 @@
   /*********************************************************************
    * Start app
    ********************************************************************/
+  
   $(function() {
+    console.log("onReady event", window.location.hash);
     FastClick.attach(document.body);
-    // getLocation(function() {});
-    navigate("#operator");
+    var token = localStorage.getItem('token');
+    if (token) {
+      $("#logout").show();
+      navigate("#operator");
+    } else if (window.location.hash.match(/access_token/)) {
+      // auth0 callback
+    } else {
+      console.log("Not logged in")
+      lock.show();
+    }
   })
 
   </script>

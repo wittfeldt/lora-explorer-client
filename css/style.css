@@ -2,44 +2,52 @@
   padding: 0px;
   margin: 0px;
 }
+
 html {
-  background-image: url("../images/bg.png");
+  background-color: rgba(34, 34, 40, 0.941176);
+  background-image: radial-gradient(rgb(64, 64, 75), rgb(17, 17, 24));
   color: #fff;
-  font-family: -apple-system, 'HelveticaNeue';
+  font-family: -apple-system, "Avenir Next", Avenir, -apple-system, BlinkMacSystemFont, Roboto, Helvetica, sans-serif;
 }
+
 header {
   font-size: 24px;
-  font-weight: bold;
-  line-height: 45px;
+  line-height: 60px;
   text-align: center;
   margin-bottom: -4px;
 }
+
 p { 
   font-size: 14px;
 }
+
 .page {
   display: none;
-  margin: 0px 12px 0px 12px;
+  margin: 0px 15px 0px 15px;
 }
+
 label  {
-  color: #FF851B;
-  font-weight: bold;
+  color: #ffc600;
   display: block;
   margin: 3px 0px 3px 0px;
 }
+
 input, button, select {
   -webkit-appearance: none;
-  border-radius: 0px;
+  border-radius: 3px;
   width: 100%;
   background-color: #eee;
   width: 100%;
+  border: none;
 }
+
 input,select {
   height: 45px;
   margin-bottom: 9px;
   font-size: 16px;
   padding: 5px;
 }
+
 button {
   line-height: 55px;
   margin-top: 30px;
@@ -51,16 +59,20 @@ button {
   -ms-user-select: none;
   user-select: none;
 }
+
 button:active {
-  background-color: #FF851B !important;
+  background-color: #ffc600 !important;
 }
+
 p.hint {
   margin-top: -9px;
 }
+
 .flash       { 
   background-color: #2ECC40 !important; 
   color: #001f3f !important;
 }
+
 .err {
   background-color: #FF4136 !important;
 }
@@ -69,8 +81,12 @@ p.hint {
 .discardHint { display: none; }
 .error { font-style: italic; }
 .log   { width: 100%; margin: 5px 0px 5px 0px;    }
-th     { color: #FF851B;}
+th     { color: #ffc600;}
 th, td { text-align: left; }
+
+ul {
+  list-style-type: none;
+}
 
 #operator ul li button {
   display: block;
@@ -90,4 +106,26 @@ button.ttn {
 
 button.loriot {
   background-image: url("../images/loriot.png");
+}
+
+.headerBtn {
+  position: absolute;
+  top: 5px;
+  width: 50px;
+  height: 40px;
+  line-height: 20px;
+  background-color: transparent;
+  font-size: 32px;
+  color: #fff;
+  margin: 0px;
+  padding: 0px;
+  display: none;
+}
+
+#logout {
+  right: 0px;
+}
+
+#back {
+  left: 0px;
 }

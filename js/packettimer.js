@@ -3,12 +3,17 @@
  ********************************************************************/
 
 function PacketTimer(el) {
-  var counter = 0;
-  var thread = null;
+  var counter = 0,
+  thread = null,
+  feedback = null;
+    
   $(el).html("Waiting for packet...");
   
   function updateDom(i) {
-    var html = "Last packet was received " + i + " seconds ago";
+    var html = "Last packet was received " + i + " seconds ago. ";
+    if (feedback) {
+      html+="<br/><i>" + feedback + "</i>";
+    }
     $(el).html(html);
   }
   this.start = function() {
@@ -25,5 +30,8 @@ function PacketTimer(el) {
   this.restart = function() {
     this.stop();
     this.start();
+  }
+  this.setFeedback = function(msg) {
+    feedback = msg;
   }
 }
