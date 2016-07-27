@@ -1,2 +1,2 @@
-# ttn-explorer-client
-HTML5 / JS app for reporting coverage stats to TTN explorer
+# lora-explorer-client
+HTML5 client app for LoRa mapper
