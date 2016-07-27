@@ -1,2 +1,2 @@
-# lora-explorer-client
-HTML5 client app for LoRa mapper
+# lora-mapper-client
+LoRa mapper app in HTML5 + Javascript
