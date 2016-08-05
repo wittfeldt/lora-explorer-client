@@ -46,13 +46,7 @@ function getLocation(done) {
       })
     },
     function(err) { 
-      console.log("getLocation", err);
-      done({
-        latitude: 60,
-        longitude: 14,
-        accuracy: 5,
-        altitude: 100
-      })
+      alert("GPS error: " + err.message);
     },
     options);
 }
@@ -74,33 +68,27 @@ function flashPage(ok) {
  ********************************************************************/
 
 function annotatePacket(packet, pos) {
-  packet.mapper = {
-    location: pos.latitude + "," + pos.longitude,
-    altitude: pos.altitude,
-    accuracy: pos.accuracy,
-    user_token: localStorage.getItem("token")
-  }
   // Calculate distance to all gateways
-  var mapperArgs = packet.mapper.location.split(",");
   packet.gateways.forEach(function(gw) {
-    if (gw.location) {
-      try {
-        var args = mapperArgs.concat(gw.location.split(",")).map(parseFloat);
-        gw.distance = distance.apply(null, args) * 1000;
-      } catch(err) {
-      }
+    try {
+      gw.distance = distanceMeters(
+        gw.latitude, gw.longitude,
+        pos.latitude, pos.longitude);
+    } catch(err) {
+      console.error(err);
     }
   })
+  packet.mapper = pos;
   return packet;
 }
 
-function distance(lat1, lon1, lat2, lon2) {
+function distanceMeters(lat1, lon1, lat2, lon2) {
   var p = 0.017453292519943295;    // Math.PI / 180
   var c = Math.cos;
   var a = 0.5 - c((lat2 - lat1) * p)/2 + 
   c(lat1 * p) * c(lat2 * p) * 
   (1 - c((lon2 - lon1) * p))/2;
     
-  return 12742 * Math.asin(Math.sqrt(a)); // 2 * R; R = 6371 km
+  return 12742 * Math.asin(Math.sqrt(a)) * 1000; // 2 * R; R = 6371 km
 }
 

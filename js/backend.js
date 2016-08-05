@@ -2,9 +2,9 @@
 * Class: Backend
 ********************************************************************/
 
-function Backend(credentials) {
-  var ws = new WebSocket("ws://" + location.host + "/api/client"),
-  closedByUser = false,
+function Backend(settings) {
+  var proto = location.protocol.match("https") ? "wss" : "ws";
+  var ws = new WebSocket(proto + "://" + location.host + "/api/client"),
   self = this;
   
   window.ws = ws;
@@ -16,7 +16,7 @@ function Backend(credentials) {
   this.report = function(packet) {
     send({
       type: "report",
-      data: packet
+      payload: packet
     })
   };
   
@@ -37,7 +37,7 @@ function Backend(credentials) {
     console.log("ws onopen");
     send({
       type: "subscribe",
-      data: credentials
+      payload: settings
     })
   }
   
@@ -46,10 +46,10 @@ function Backend(credentials) {
     console.log("ws onmessage", msg.type);
     
     if (msg.type == "packet") {
-      self.trigger("packet", msg.data);
+      self.trigger("packet", msg.payload);
       
     } else if (msg.type == "error" || msg.type == "feedback") {
-      self.trigger(msg.type, msg.data.message);
+      self.trigger(msg.type, msg.payload.message);
       
     } else {
       console.error("Weird message from websocket", msg);
@@ -64,6 +64,7 @@ function Backend(credentials) {
   function send(msg) {
     if (ws.readyState !== ws.OPEN) return;
     console.log("ws send", msg.type);
+    msg.token = localStorage.getItem("token");
     ws.send(JSON.stringify(msg))
   }
 }
