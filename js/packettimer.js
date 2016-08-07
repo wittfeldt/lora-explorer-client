@@ -24,7 +24,7 @@ function PacketTimer(el) {
   }
   this.stop = function() {
     counter = 0;
-    updateDom(counter);
+    $(el).html("Waiting for packet...");
     if (thread) clearInterval(thread);
   }
   this.restart = function() {
